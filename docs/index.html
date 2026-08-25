@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A research artifact evaluating a logistic-regression ranking model for prioritizing potentially declining content pages for human review.">
+  <title>Prioritizing Content Decline Risk — FlyRank ML Research</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --text: #17202a;
+      --muted: #5f6b76;
+      --line: #dfe4e8;
+      --accent: #1f5f8b;
+      --accent-soft: #eaf3f8;
+      --dark: #18242f;
+      --success-soft: #edf7f1;
+      --warning-soft: #fff7e8;
+      --max: 980px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+
+    .topbar {
+      background: var(--dark);
+      color: #fff;
+      padding: 12px 20px;
+      font-size: 13px;
+    }
+    .topbar-inner {
+      max-width: var(--max);
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+    .topbar a { color: #fff; }
+
+    main { max-width: var(--max); margin: 0 auto; padding: 44px 20px 80px; }
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 46px 46px 40px;
+      box-shadow: 0 8px 28px rgba(23, 32, 42, .05);
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 850px;
+      font-size: clamp(34px, 5vw, 54px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+    .subtitle {
+      max-width: 780px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 34px 38px;
+      margin-top: 22px;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 27px;
+      line-height: 1.25;
+      letter-spacing: -.02em;
+    }
+    h3 { margin: 28px 0 9px; font-size: 18px; }
+    p { margin: 0 0 15px; }
+    .abstract {
+      font-size: 17px;
+      color: #2d3944;
+    }
+    .abstract strong { color: var(--text); }
+
+    .finding {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 24px 0 8px;
+    }
+    .finding-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      background: #fbfcfd;
+    }
+    .finding-card .label { color: var(--muted); font-size: 13px; }
+    .finding-card .value { font-size: 34px; font-weight: 800; line-height: 1.1; margin-top: 5px; }
+    .finding-card .detail { color: var(--muted); font-size: 14px; margin-top: 5px; }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 17px 19px;
+      margin: 20px 0;
+      border-radius: 0 10px 10px 0;
+    }
+    .warning { background: var(--warning-soft); border-left-color: #a76a00; }
+    .success { background: var(--success-soft); }
+
+    .table-wrap { overflow-x: auto; margin: 18px 0 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f5f7f9; font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      margin: 22px 0 8px;
+      background: #fcfdfe;
+    }
+    .chart-title { font-weight: 750; margin-bottom: 4px; }
+    .chart-subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+    .bar-row { display: grid; grid-template-columns: 170px 1fr 60px; align-items: center; gap: 12px; margin: 14px 0; }
+    .bar-label { font-size: 14px; font-weight: 650; }
+    .track { height: 28px; background: #e9edf0; border-radius: 7px; overflow: hidden; }
+    .bar { height: 100%; border-radius: 7px; background: var(--accent); }
+    .bar.baseline { background: #9aa7b2; }
+    .bar-value { font-weight: 750; text-align: right; }
+    figcaption { color: var(--muted); font-size: 13px; margin-top: 16px; }
+
+    ul, ol { margin: 10px 0 16px; padding-left: 22px; }
+    li { margin: 7px 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .steps { counter-reset: step; list-style: none; padding-left: 0; }
+    .steps li { counter-increment: step; position: relative; padding-left: 42px; margin: 18px 0; }
+    .steps li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 1px;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13px;
+    }
+    .metric-note { color: var(--muted); font-size: 13px; }
+    code {
+      background: #eef1f4; padding: 2px 6px; border-radius: 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .9em;
+    }
+
+    footer {
+      max-width: var(--max);
+      margin: 24px auto 0;
+      padding: 28px 20px 50px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .smallcaps { text-transform: uppercase; letter-spacing: .08em; font-weight: 750; font-size: 11px; }
+
+    @media (max-width: 720px) {
+      main { padding: 18px 12px 50px; }
+      .hero, section { padding: 25px 20px; border-radius: 14px; }
+      .finding, .two-col { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr 54px; gap: 8px; }
+      .bar-label { grid-column: 1 / -1; }
+      .bar-value { grid-column: 2; grid-row: 2; }
+      .track { grid-column: 1; grid-row: 2; }
+      .topbar-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span>FlyRank ML Internship · Research artifact</span>
+      <a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship">View repository</a>
+    </div>
+  </div>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Research paper · Decision support</div>
+      <h1>Prioritizing Content Decline Risk for Human Review</h1>
+      <p class="subtitle">Evaluating whether a learned ranking model can concentrate potentially declining content pages near the top of a review queue more effectively than a transparent rule-based baseline.</p>
+      <div class="hero-meta">
+        <span>30,000-row anonymized modeling dataset</span>
+        <span>32 pseudonymized clients</span>
+        <span>27 predictor features</span>
+        <span>Client-grouped holdout evaluation</span>
+      </div>
+    </header>
+
+    <section id="abstract">
+      <h2>Title + Abstract</h2>
+      <p class="abstract"><strong>Question:</strong> Can observable content and SEO performance signals be used to prioritize pages that are labeled as declining for earlier human review?</p>
+      <p class="abstract"><strong>Data:</strong> The research used the FlyRank internship warehouse to establish the data context and leakage considerations, while the reported Week 5–7 modeling experiments used a 30,000-row anonymized content-refresh dataset covering 32 pseudonymized clients.</p>
+      <p class="abstract"><strong>Method:</strong> A hand-written ranking rule was compared with logistic regression using 27 engineered features and a client-grouped train/test split that held out seven previously unseen clients.</p>
+      <p class="abstract"><strong>Result:</strong> On the held-out evaluation set, Precision@50 increased from <strong>30% for the baseline to 74% for logistic regression</strong>, with 37 labeled declining pages in the model's top 50 compared with 15 under the baseline.</p>
+      <p class="abstract"><strong>Use:</strong> The result supports using the model as a prioritization aid for human review, while not establishing causation, guaranteed future performance, or a case for fully automated content decisions.</p>
+
+      <div class="finding">
+        <div class="finding-card">
+          <div class="label">Rule-based baseline</div>
+          <div class="value">30%</div>
+          <div class="detail">15 of the top 50 pages were labeled declining</div>
+        </div>
+        <div class="finding-card">
+          <div class="label">Logistic regression</div>
+          <div class="value">74%</div>
+          <div class="detail">37 of the top 50 pages were labeled declining</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="problem">
+      <h2>1. Introduction / Problem</h2>
+      <p>Content teams often have more pages to review than they can inspect in the same amount of time. A useful prioritization system should therefore help a reviewer decide <em>which pages deserve attention first</em>, without pretending that a model can replace the reviewer.</p>
+      <p>This research evaluates that decision-support problem. The central comparison is between a transparent hand-written baseline and a learned model that ranks pages by their estimated probability of belonging to the declining class.</p>
+      <div class="callout"><strong>Decision supported:</strong> If a team can review only a limited number of pages, which pages should receive earlier human attention?</div>
+      <p>The practical output is a ranked queue. The ranking is a prioritization mechanism, not an automated instruction to refresh, rewrite, redirect, or remove a page.</p>
+    </section>
+
+    <section id="data">
+      <h2>2. Data</h2>
+      <h3>Warehouse research foundation</h3>
+      <p>The initial data investigation used the FlyRank internship warehouse. March 2026 was selected as the mid-panel development month for the Week 3 data-contract work rather than using the final month to develop label logic.</p>
+      <p>The March 2026 warehouse slice contained <strong>9,841,378 rows and 30 columns</strong>, covering <strong>2026-03-01 through 2026-03-31</strong>. This slice was used to verify the data grain, establish available signals, check availability, and investigate leakage considerations.</p>
+      <p>The final-month <code>_sample</code> data was treated separately from the mid-panel development analysis because the internship guidance identifies June 2026 as the final month and the natural outcome window for past-to-future label construction.</p>
+
+      <h3>Modeling dataset</h3>
+      <p>The reported Week 5–7 modeling experiments used the anonymized <code>content_refresh_anonymized.csv</code> dataset. It contains <strong>30,000 content-level observations across 32 pseudonymized clients and 44 available fields</strong>.</p>
+      <p>The fields cover search demand, content characteristics, traffic, engagement, freshness, and search-performance signals. The final workflow used 27 predictor features.</p>
+
+      <h3>Public-safe scope</h3>
+      <p>Identifiers are pseudonymized. Public outputs contain derived model results, aggregate evaluation metrics, reason codes, and pseudonymized content identifiers only. No client names, private URLs, raw search queries, credentials, or other private information are included in this research artifact.</p>
+    </section>
+
+    <section id="methodology">
+      <h2>3. Methodology</h2>
+      <h3>Assumptions</h3>
+      <p>The analysis assumes that observable page-level SEO and performance signals contain useful information for distinguishing pages labeled as declining from other pages. The objective is prioritization, not automatic decision-making, and the model does not establish that any individual feature causes decline.</p>
+
+      <h3>Label definition</h3>
+      <p>The supervised target, <code>is_declining_label</code>, was constructed from <code>trend_direction</code>: <code>down</code> was mapped to 1 and all other values to 0. Because <code>trend_direction</code> directly defines the target, it was excluded from the predictor set.</p>
+
+      <h3>Features and preprocessing</h3>
+      <p>The 27 predictors covered search demand and competition, CPC, content size and characteristics, impressions, clicks, sessions, AI sessions, days with impressions and sessions, content age and freshness, CTR, average search position, engagement rate, scroll rate, AI traffic percentage, and categorical tiers for competition, content type, intent, age, freshness, content size, impressions, and position.</p>
+      <p>Highly skewed traffic variables — impressions, clicks, sessions, and AI sessions — were transformed using <code>log1p</code>. Numerical missing values were median-imputed and standardized; categorical missing values were replaced with the most frequent category and categorical variables were one-hot encoded. Preprocessing was kept inside the modeling pipeline.</p>
+
+      <h3>Baseline</h3>
+      <p>A transparent hand-written rule was established before supervised modeling. It provided a practical benchmark representing a simple signal-based prioritization approach. The baseline and learned model were compared using the same evaluation framework.</p>
+
+      <h3>Validation design</h3>
+      <p>The modeling workflow used a client-grouped train/test split. <strong>25 clients were used for training and 7 previously unseen clients were held out for testing</strong>. <code>GroupShuffleSplit</code> used <code>test_size=0.20</code> and <code>random_state=42</code>, with <code>client_id</code> as the grouping variable. Training and test client sets were checked for overlap.</p>
+
+      <h3>Model and evaluation</h3>
+      <p>The primary supervised model was logistic regression. Its predicted probability for the declining class was used as the ranking score. Pages were ordered from highest to lowest score rather than relying only on the default 0.5 classification threshold.</p>
+      <p>Evaluation included accuracy, precision, recall, and Precision@50. Precision@50 is the operationally relevant metric here because it measures the proportion of labeled declining pages among the 50 pages receiving the highest review priority.</p>
+
+      <h3>Leakage checks</h3>
+      <p><code>trend_direction</code>, <code>trend_pct</code>, and <code>is_declining_label</code> were excluded because they contain or directly define outcome information. <code>content_id</code> was excluded as an identifier rather than a predictive signal, and <code>client_id</code> was reserved for grouped validation.</p>
+      <p>The earlier warehouse-stage leakage exercise deliberately introduced a label-derived variable, observed the resulting misleading score improvement, and removed it from the honest workflow. This was used as a practical check that outcome information was not being allowed into the final predictors.</p>
+    </section>
+
+    <section id="results">
+      <h2>4. Results (vs baseline)</h2>
+      <p>The key question is whether the learned model can concentrate labeled declining pages near the top of the queue more effectively than the hand-written baseline.</p>
+
+      <figure class="chart-card">
+        <div class="chart-title">Top-50 ranking precision</div>
+        <div class="chart-subtitle">Same evaluation setup; percentage of top-50 pages labeled as declining.</div>
+        <div class="bar-row">
+          <div class="bar-label">Rule-based baseline</div>
+          <div class="track"><div class="bar baseline" style="width:30%"></div></div>
+          <div class="bar-value">30%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Logistic regression</div>
+          <div class="track"><div class="bar" style="width:74%"></div></div>
+          <div class="bar-value">74%</div>
+        </div>
+        <figcaption><strong>Takeaway:</strong> The model's top 50 contained 37 labeled declining pages, compared with 15 under the baseline — an improvement of 44 percentage points in Precision@50.</figcaption>
+      </figure>
+
+      <h3>Main comparison</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Approach</th><th>Precision@50</th><th>Actual declining pages in top 50</th></tr></thead>
+          <tbody>
+            <tr><td>Rule-based baseline</td><td>30%</td><td>15 / 50</td></tr>
+            <tr><td><strong>Logistic regression</strong></td><td><strong>74%</strong></td><td><strong>37 / 50</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Logistic-regression metrics</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Accuracy</td><td>0.5846</td></tr>
+            <tr><td>Precision</td><td>0.5824</td></tr>
+            <tr><td>Recall</td><td>0.6608</td></tr>
+            <tr><td><strong>Precision@50</strong></td><td><strong>0.7400</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="metric-note">Precision@50 is emphasized because the operational use case is ranking a limited review queue.</p>
+
+      <div class="callout success"><strong>Interpretation:</strong> Under this held-out client evaluation, the learned model increased Precision@50 from 30% to 74%. This is approximately 2.47 times the baseline Precision@50, but it should not be described as a 2.47× increase in general model accuracy.</div>
+    </section>
+
+    <section id="limitations">
+      <h2>5. Limitations &amp; Honest Framing</h2>
+      <p>The results show stronger ranking performance than the tested baseline under the stated evaluation setup. They do not establish production performance, causal relationships, or the correctness of every individual recommended action.</p>
+      <div class="two-col">
+        <div>
+          <h3>Dataset scope</h3>
+          <p>The reported model results come from the 30,000-row anonymized content-refresh dataset, not the full FlyRank warehouse.</p>
+          <h3>Label limitation</h3>
+          <p>The target represents the dataset's definition of a downward trend. A high score does not independently establish that a page is objectively underperforming.</p>
+          <h3>Causality</h3>
+          <p>Observed associations do not show that changing an individual feature will prevent or reverse decline.</p>
+        </div>
+        <div>
+          <h3>Validation scope</h3>
+          <p>The evaluation uses one client-grouped holdout: 25 training clients and 7 test clients. Precision@50 is an observed result for this setup, not a guarantee.</p>
+          <h3>Operational context</h3>
+          <p>Strategic importance, seasonality, technical issues, planned changes, and other context may not be represented in the features.</p>
+          <h3>Monitoring</h3>
+          <p>Performance should be re-evaluated if ranking quality declines, important feature distributions shift, the declining-page proportion changes materially, or new clients/content types appear outside the training population.</p>
+        </div>
+      </div>
+      <div class="callout warning"><strong>Human review remains mandatory.</strong> The model is decision support. A high-risk page should receive attention sooner; it should not automatically be refreshed, rewritten, redirected, or removed.</div>
+    </section>
+
+    <section id="recommendations">
+      <h2>6. Ranked Recommendations</h2>
+      <p>The model's main operational output is a ranked review queue. The ranking determines where limited review capacity should be spent first; it does not determine the final content action.</p>
+      <ol class="steps">
+        <li><strong>Review high-risk pages first.</strong> Start with the pages receiving the highest decline-risk scores.</li>
+        <li><strong>Prioritize high-risk pages that are also stale.</strong> Confirm whether the page remains strategically relevant and whether a refresh is appropriate.</li>
+        <li><strong>Investigate low CTR before changing content.</strong> Review search-result presentation, intent alignment, and relevance before selecting an intervention.</li>
+        <li><strong>Investigate search position and engagement signals.</strong> Treat these as review prompts rather than automatic diagnoses.</li>
+        <li><strong>Use lower-ranked pages as secondary work.</strong> Continue down the queue according to capacity and business priorities.</li>
+      </ol>
+
+      <h3>Recommended operating workflow</h3>
+      <div class="callout"><strong>Rank → Review → Diagnose → Decide → Act → Monitor</strong></div>
+      <p>Model ranking and rule-based reason codes serve different purposes. The model prioritizes pages; the reason codes summarize observable conditions that a reviewer can inspect. They are not causal explanations of the logistic-regression prediction.</p>
+    </section>
+
+    <section id="reproducibility">
+      <h2>7. Reproducibility</h2>
+      <p>The research artifact is backed by the project repository and the notebooks used during the analysis.</p>
+      <ul>
+        <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship">Project repository</a></li>
+        <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/blob/main/work/notebooks/capstone.ipynb">Capstone notebook</a></li>
+        <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/tree/main/work/notebooks">Analysis notebooks</a></li>
+        <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/blob/main/work/outputs/week7_ranked_action_queue.csv">Week 7 ranked action queue</a></li>
+      </ul>
+      <p>The public repository contains the analysis workflow and derived artifacts. Dataset access may remain subject to the internship dataset's access controls.</p>
+    </section>
+
+    <section id="artifacts">
+      <h2>8. Artifacts</h2>
+      <p>The page embeds the main model-versus-baseline result directly and links to the ranked action queue and notebooks for inspection.</p>
+      <p>The full ranked queue is retained as a repository artifact rather than displaying every row on the public page. This keeps the research page focused on the evidence while preserving the underlying output for reproducibility.</p>
+    </section>
+
+    <section id="acknowledgments">
+      <h2>9. Acknowledgments &amp; Data Credit</h2>
+      <p>This work was completed as part of the FlyRank ML Internship and was built on the <strong>FlyRank ML Internship dataset</strong>.</p>
+      <p>Data source: <a href="https://flyrank.ai" rel="noopener noreferrer">FlyRank</a>.</p>
+      <p>The analysis and conclusions presented here are the author's interpretation of the supplied internship data and evaluation setup.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="smallcaps">Research artifact</div>
+    <p>Public-safe presentation of the completed analysis. Results are reported as observed under the stated evaluation setup and are intended for decision support.</p>
+  </footer>
+</body>
+</html>
