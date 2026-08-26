@@ -240,12 +240,36 @@
     </section>
 
     <section id="problem">
-      <h2>1. Introduction / Problem</h2>
-      <p>Content teams often have more pages to review than they can inspect in the same amount of time. A useful prioritization system should therefore help a reviewer decide <em>which pages deserve attention first</em>, without pretending that a model can replace the reviewer.</p>
-      <p>This research evaluates that decision-support problem. The central comparison is between a transparent hand-written baseline and a learned model that ranks pages by their estimated probability of belonging to the declining class.</p>
-      <div class="callout"><strong>Decision supported:</strong> If a team can review only a limited number of pages, which pages should receive earlier human attention?</div>
-      <p>The practical output is a ranked queue. The ranking is a prioritization mechanism, not an automated instruction to refresh, rewrite, redirect, or remove a page.</p>
-    </section>
+  <h2>1. Introduction / Problem</h2>
+
+  <p>
+    Within the FlyRank content-optimization setting, content teams can have more
+    pages to review than they can inspect in the same amount of time. A useful
+    prioritization system should therefore help a reviewer decide
+    <em>which pages deserve attention first</em>, without pretending that a
+    model can replace the reviewer.
+  </p>
+
+  <p>
+    This research evaluates that decision-support problem using observable
+    content and SEO performance signals. The central comparison is between a
+    transparent hand-written baseline and a learned model that ranks pages by
+    their estimated probability of belonging to the declining class.
+  </p>
+
+  <div class="callout">
+    <strong>Decision supported:</strong>
+    If a team can review only a limited number of pages, which pages should
+    receive earlier human attention?
+  </div>
+
+  <p>
+    The practical output is a ranked queue that concentrates the pages most
+    likely to match the declining label near the top. The ranking is a
+    prioritization mechanism, not an automated instruction to refresh,
+    rewrite, redirect, or remove a page.
+  </p>
+</section>
 
     <section id="data">
       <h2>2. Data</h2>
