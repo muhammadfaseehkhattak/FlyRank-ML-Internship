@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A research artifact evaluating a logistic-regression ranking model for prioritizing potentially declining content pages for human review.">
-  <title>Prioritizing Content Decline Risk — FlyRank ML Research</title>
+  <meta name="description" content="A FlyRank research artifact evaluating a Random Forest ranking workflow for prioritizing content pages using future organic-session predictions derived from the full warehouse release.">
+  <title>Prioritizing Content Pages with Warehouse-Derived Ranking — FlyRank ML Research</title>
   <style>
     :root {
       --bg: #f7f8fa;
@@ -19,7 +19,6 @@
       --warning-soft: #fff7e8;
       --max: 980px;
     }
-
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -31,167 +30,64 @@
     }
     a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
     a:hover { text-decoration-thickness: 2px; }
-
-    .topbar {
-      background: var(--dark);
-      color: #fff;
-      padding: 12px 20px;
-      font-size: 13px;
-    }
-    .topbar-inner {
-      max-width: var(--max);
-      margin: auto;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-    }
+    .topbar { background: var(--dark); color: #fff; padding: 12px 20px; font-size: 13px; }
+    .topbar-inner { max-width: var(--max); margin: auto; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
     .topbar a { color: #fff; }
-
     main { max-width: var(--max); margin: 0 auto; padding: 44px 20px 80px; }
     .hero {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 46px 46px 40px;
-      box-shadow: 0 8px 28px rgba(23, 32, 42, .05);
+      background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+      padding: 46px 46px 40px; box-shadow: 0 8px 28px rgba(23, 32, 42, .05);
     }
-    .eyebrow {
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 750;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-    h1 {
-      margin: 0;
-      max-width: 850px;
-      font-size: clamp(34px, 5vw, 54px);
-      line-height: 1.08;
-      letter-spacing: -.035em;
-    }
-    .subtitle {
-      max-width: 780px;
-      margin: 18px 0 0;
-      color: var(--muted);
-      font-size: 18px;
-    }
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 18px;
-      margin-top: 26px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    section {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 34px 38px;
-      margin-top: 22px;
-    }
-    h2 {
-      margin: 0 0 16px;
-      font-size: 27px;
-      line-height: 1.25;
-      letter-spacing: -.02em;
-    }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+    h1 { margin: 0; max-width: 850px; font-size: clamp(34px, 5vw, 54px); line-height: 1.08; letter-spacing: -.035em; }
+    .subtitle { max-width: 800px; margin: 18px 0 0; color: var(--muted); font-size: 18px; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 26px; color: var(--muted); font-size: 14px; }
+    section { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 34px 38px; margin-top: 22px; }
+    h2 { margin: 0 0 16px; font-size: 27px; line-height: 1.25; letter-spacing: -.02em; }
     h3 { margin: 28px 0 9px; font-size: 18px; }
     p { margin: 0 0 15px; }
-    .abstract {
-      font-size: 17px;
-      color: #2d3944;
-    }
+    .abstract { font-size: 17px; color: #2d3944; }
     .abstract strong { color: var(--text); }
-
-    .finding {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin: 24px 0 8px;
-    }
-    .finding-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 20px;
-      background: #fbfcfd;
-    }
+    .finding { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0 8px; }
+    .finding-card { border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: #fbfcfd; }
     .finding-card .label { color: var(--muted); font-size: 13px; }
-    .finding-card .value { font-size: 34px; font-weight: 800; line-height: 1.1; margin-top: 5px; }
+    .finding-card .value { font-size: 31px; font-weight: 800; line-height: 1.1; margin-top: 5px; }
     .finding-card .detail { color: var(--muted); font-size: 14px; margin-top: 5px; }
-
-    .callout {
-      border-left: 4px solid var(--accent);
-      background: var(--accent-soft);
-      padding: 17px 19px;
-      margin: 20px 0;
-      border-radius: 0 10px 10px 0;
-    }
+    .callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 17px 19px; margin: 20px 0; border-radius: 0 10px 10px 0; }
     .warning { background: var(--warning-soft); border-left-color: #a76a00; }
     .success { background: var(--success-soft); }
-
     .table-wrap { overflow-x: auto; margin: 18px 0 8px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th, td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     th { background: #f5f7f9; font-weight: 700; }
     tr:last-child td { border-bottom: 0; }
-
-    .chart-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 22px;
-      margin: 22px 0 8px;
-      background: #fcfdfe;
-    }
+    .chart-card { border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin: 22px 0 8px; background: #fcfdfe; }
     .chart-title { font-weight: 750; margin-bottom: 4px; }
     .chart-subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-    .bar-row { display: grid; grid-template-columns: 170px 1fr 60px; align-items: center; gap: 12px; margin: 14px 0; }
+    .bar-row { display: grid; grid-template-columns: 70px 170px 1fr 74px 74px; align-items: center; gap: 10px; margin: 14px 0; }
     .bar-label { font-size: 14px; font-weight: 650; }
-    .track { height: 28px; background: #e9edf0; border-radius: 7px; overflow: hidden; }
+    .track { height: 26px; background: #e9edf0; border-radius: 7px; overflow: hidden; }
     .bar { height: 100%; border-radius: 7px; background: var(--accent); }
     .bar.baseline { background: #9aa7b2; }
     .bar-value { font-weight: 750; text-align: right; }
+    .delta { color: #2f6b4a; font-weight: 700; text-align: right; }
     figcaption { color: var(--muted); font-size: 13px; margin-top: 16px; }
-
     ul, ol { margin: 10px 0 16px; padding-left: 22px; }
     li { margin: 7px 0; }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
     .steps { counter-reset: step; list-style: none; padding-left: 0; }
     .steps li { counter-increment: step; position: relative; padding-left: 42px; margin: 18px 0; }
-    .steps li::before {
-      content: counter(step);
-      position: absolute; left: 0; top: 1px;
-      width: 28px; height: 28px; border-radius: 50%;
-      display: grid; place-items: center;
-      background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13px;
-    }
+    .steps li::before { content: counter(step); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13px; }
     .metric-note { color: var(--muted); font-size: 13px; }
-    code {
-      background: #eef1f4; padding: 2px 6px; border-radius: 5px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: .9em;
-    }
-
-    footer {
-      max-width: var(--max);
-      margin: 24px auto 0;
-      padding: 28px 20px 50px;
-      color: var(--muted);
-      font-size: 13px;
-    }
+    code { background: #eef1f4; padding: 2px 6px; border-radius: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+    .code-like { background: #f5f7f9; border: 1px solid var(--line); border-radius: 10px; padding: 15px 17px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-x: auto; }
+    footer { max-width: var(--max); margin: 24px auto 0; padding: 28px 20px 50px; color: var(--muted); font-size: 13px; }
     .smallcaps { text-transform: uppercase; letter-spacing: .08em; font-weight: 750; font-size: 11px; }
-
+    @media (max-width: 820px) { .finding { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 60px 1fr 70px 60px; } .bar-row .bar-label { grid-column: 1 / -1; } .bar-row .track { grid-column: 1 / 3; } .bar-row .bar-value { grid-column: 3; } .bar-row .delta { grid-column: 4; } }
     @media (max-width: 720px) {
       main { padding: 18px 12px 50px; }
       .hero, section { padding: 25px 20px; border-radius: 14px; }
-      .finding, .two-col { grid-template-columns: 1fr; }
-      .bar-row { grid-template-columns: 1fr 54px; gap: 8px; }
-      .bar-label { grid-column: 1 / -1; }
-      .bar-value { grid-column: 2; grid-row: 2; }
-      .track { grid-column: 1; grid-row: 2; }
+      .two-col { grid-template-columns: 1fr; }
       .topbar-inner { flex-direction: column; align-items: flex-start; }
     }
   </style>
@@ -207,229 +103,236 @@
   <main>
     <header class="hero">
       <div class="eyebrow">Research paper · Decision support</div>
-      <h1>Prioritizing Content Decline Risk for Human Review</h1>
-      <p class="subtitle">Evaluating whether a learned ranking model can concentrate potentially declining content pages near the top of a review queue more effectively than a transparent rule-based baseline.</p>
+      <h1>Prioritizing Content Pages with Warehouse-Derived Ranking</h1>
+      <p class="subtitle">Evaluating whether historical content, SEO, search-performance, and traffic signals can be used to estimate future organic sessions and improve the ranking of pages for earlier human review.</p>
       <div class="hero-meta">
-        <span>30,000-row anonymized modeling dataset</span>
-        <span>32 pseudonymized clients</span>
-        <span>27 predictor features</span>
-        <span>Client-grouped holdout evaluation</span>
+        <span>~79M-row FlyRank warehouse release</span>
+        <span>~17 months of daily search performance</span>
+        <span>~70 source clients</span>
+        <span>323,926 final modeling observations</span>
+        <span>Random Forest regression</span>
       </div>
     </header>
 
     <section id="abstract">
       <h2>Title + Abstract</h2>
-      <p class="abstract"><strong>Question:</strong> Can observable content and SEO performance signals be used to prioritize pages that are labeled as declining for earlier human review?</p>
-      <p class="abstract"><strong>Data:</strong> The research used the FlyRank internship warehouse to establish the data context and leakage considerations, while the reported Week 5–7 modeling experiments used a 30,000-row anonymized content-refresh dataset covering 32 pseudonymized clients.</p>
-      <p class="abstract"><strong>Method:</strong> A hand-written ranking rule was compared with logistic regression using 27 engineered features and a client-grouped train/test split that held out seven previously unseen clients.</p>
-      <p class="abstract"><strong>Result:</strong> On the held-out evaluation set, Precision@50 increased from <strong>30% for the baseline to 74% for logistic regression</strong>, with 37 labeled declining pages in the model's top 50 compared with 15 under the baseline.</p>
-      <p class="abstract"><strong>Use:</strong> The result supports using the model as a prioritization aid for human review, while not establishing causation, guaranteed future performance, or a case for fully automated content decisions.</p>
+      <p class="abstract"><strong>Question:</strong> Can historical content, SEO, search-performance, and traffic signals be used to estimate future organic sessions well enough to improve the ordering of pages for limited human review capacity?</p>
+      <p class="abstract"><strong>Data:</strong> The final study was built from the full pseudonymized <code>FlyRank/internship-warehouse</code> release, whose daily content-performance fact table contains approximately 79 million rows across roughly 17 months and about 70 clients, together with a query-level table. The warehouse was queried selectively rather than loaded into memory as one dataset.</p>
+      <p class="abstract"><strong>Modeling population:</strong> The final controlled extraction began with 418,047 candidate records. After eligibility and quality controls, 323,926 content-page/client observations formed the final modeling population across 53 pseudonymized clients.</p>
+      <p class="abstract"><strong>Method:</strong> Historical signals were transformed into 51 pre-processing features and then expanded to 69 model-input columns. A Random Forest Regressor estimated <strong>future organic sessions</strong>. A transparent rule-based baseline was evaluated on the same ranking populations.</p>
+      <p class="abstract"><strong>Result:</strong> On the final held-out test set of 18,743 observations, the Random Forest achieved higher NDCG than the baseline at every evaluated depth: <strong>0.9248 vs 0.8113 at NDCG@20</strong>, <strong>0.9366 vs 0.8099 at NDCG@50</strong>, <strong>0.9369 vs 0.7756 at NDCG@100</strong>, <strong>0.8633 vs 0.7244 at NDCG@500</strong>, and <strong>0.8197 vs 0.6971 at NDCG@1000</strong>.</p>
+      <p class="abstract"><strong>Use:</strong> The evidence supports using the learned ranking as decision support for prioritizing pages. It does not prove that a page will recover after an intervention, that any individual feature causes performance, or that the observed ranking quality will remain unchanged in production.</p>
 
       <div class="finding">
-        <div class="finding-card">
-          <div class="label">Rule-based baseline</div>
-          <div class="value">30%</div>
-          <div class="detail">15 of the top 50 pages were labeled declining</div>
-        </div>
-        <div class="finding-card">
-          <div class="label">Logistic regression</div>
-          <div class="value">74%</div>
-          <div class="detail">37 of the top 50 pages were labeled declining</div>
-        </div>
+        <div class="finding-card"><div class="label">Source warehouse</div><div class="value">~79M</div><div class="detail">Daily content-performance rows in the full release</div></div>
+        <div class="finding-card"><div class="label">Final modeling population</div><div class="value">323,926</div><div class="detail">Observations after eligibility and quality controls</div></div>
+        <div class="finding-card"><div class="label">Best observed test NDCG</div><div class="value">0.9369</div><div class="detail">Random Forest at NDCG@100</div></div>
       </div>
     </section>
 
     <section id="problem">
-  <h2>1. Introduction / Problem</h2>
-
-  <p>
-    Within the FlyRank content-optimization setting, content teams can have more
-    pages to review than they can inspect in the same amount of time. A useful
-    prioritization system should therefore help a reviewer decide
-    <em>which pages deserve attention first</em>, without pretending that a
-    model can replace the reviewer.
-  </p>
-
-  <p>
-    This research evaluates that decision-support problem using observable
-    content and SEO performance signals. The central comparison is between a
-    transparent hand-written baseline and a learned model that ranks pages by
-    their estimated probability of belonging to the declining class.
-  </p>
-
-  <div class="callout">
-    <strong>Decision supported:</strong>
-    If a team can review only a limited number of pages, which pages should
-    receive earlier human attention?
-  </div>
-
-  <p>
-    The practical output is a ranked queue that concentrates the pages most
-    likely to match the declining label near the top. The ranking is a
-    prioritization mechanism, not an automated instruction to refresh,
-    rewrite, redirect, or remove a page.
-  </p>
-</section>
+      <h2>1. Introduction / Problem</h2>
+      <p>Content and SEO teams may have more pages, opportunities, and potential issues than they can investigate at the same time. The practical problem is therefore one of <em>prioritization</em>: when review capacity is limited, which pages should receive attention first?</p>
+      <p>This study approaches that problem from the full FlyRank warehouse rather than from the earlier 30,000-row development sample. The warehouse contains historical content, search, and traffic information at a scale large enough to construct a more substantial modeling population while still allowing selective analytical queries.</p>
+      <div class="callout"><strong>Decision supported:</strong> Which content pages should be placed earlier in a review queue when the team cannot inspect every page immediately?</div>
+      <p>The final supervised task predicts <strong>future organic sessions</strong>. Those predictions are then used as a ranking signal. This is deliberately different from claiming that the model directly predicts whether a page is “bad,” whether it will decline, or whether it should automatically be changed.</p>
+    </section>
 
     <section id="data">
       <h2>2. Data</h2>
-      <h3>Warehouse research foundation</h3>
-      <p>The initial data investigation used the FlyRank internship warehouse. March 2026 was selected as the mid-panel development month for the Week 3 data-contract work rather than using the final month to develop label logic.</p>
-      <p>The March 2026 warehouse slice contained <strong>9,841,378 rows and 30 columns</strong>, covering <strong>2026-03-01 through 2026-03-31</strong>. This slice was used to verify the data grain, establish available signals, check availability, and investigate leakage considerations.</p>
-      <p>The final-month <code>_sample</code> data was treated separately from the mid-panel development analysis because the internship guidance identifies June 2026 as the final month and the natural outcome window for past-to-future label construction.</p>
-
-      <h3>Modeling dataset</h3>
-      <p>The reported Week 5–7 modeling experiments used the anonymized <code>content_refresh_anonymized.csv</code> dataset. It contains <strong>30,000 content-level observations across 32 pseudonymized clients and 44 available fields</strong>.</p>
-      <p>The fields cover search demand, content characteristics, traffic, engagement, freshness, and search-performance signals. The final workflow used 27 predictor features.</p>
-
-      <h3>Public-safe scope</h3>
-      <p>Identifiers are pseudonymized. Public outputs contain derived model results, aggregate evaluation metrics, reason codes, and pseudonymized content identifiers only. No client names, private URLs, raw search queries, credentials, or other private information are included in this research artifact.</p>
+      <h3>2.1 Full warehouse release</h3>
+      <p>The source is the pseudonymized <code>FlyRank/internship-warehouse</code> release hosted on Hugging Face. The release contains approximately <strong>79 million rows</strong> in its daily content-performance fact table, representing roughly <strong>17 months of daily search performance for about 70 clients</strong>, plus a query-level table.</p>
+      <p>The warehouse was not treated as a single in-memory dataframe. DuckDB was used to query the hosted Parquet data and aggregate only the columns and partitions needed for the analysis. This allowed the research workflow to work from the full release without downloading or loading all approximately 79 million rows into RAM.</p>
+      <h3>2.2 Warehouse structure</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Source table</th><th>Role in the analysis</th></tr></thead>
+          <tbody>
+            <tr><td><code>dim_clients</code></td><td>Client metadata, access profile, and data-start information used to understand client-level coverage.</td></tr>
+            <tr><td><code>dim_content</code></td><td>Content-level attributes and identifiers used to establish the page/client modeling context.</td></tr>
+            <tr><td><code>fact_content_daily_performance</code></td><td>Large daily search-performance and traffic fact table used to derive historical performance signals.</td></tr>
+            <tr><td><code>fact_content_daily_performance_sample</code></td><td>Sampled daily fact table available for development and diagnostic work.</td></tr>
+            <tr><td><code>fact_content_query_90d</code></td><td>Query-level context used in warehouse exploration to understand how content earns search impressions.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>2.3 Final modeling population</h3>
+      <p>The final extraction identified <strong>418,047 candidate records</strong>. After eligibility filtering, <strong>324,998 records</strong> remained. After target construction and final quality controls, <strong>323,926 observations</strong> formed the final modeling population.</p>
+      <p>The final modeling population covered <strong>53 pseudonymized clients</strong>. A further <strong>1,072 records</strong> were excluded after the eligible population was identified because they did not satisfy the final temporal or modeling conditions.</p>
+      <h3>2.4 Temporal scope</h3>
+      <p>The source modeling extraction contained content creation dates from <strong>2024-11-22 through 2026-07-06</strong>. After the modeling eligibility constraints, the final content-creation window extended through <strong>2026-04-01</strong>. Historical content-update dates extended from 2025-06-01 through 2026-07-06, while keyword creation dates extended through 2026-03-31.</p>
+      <h3>2.5 Signals available to the model</h3>
+      <p>The final feature construction covered keyword and search-demand signals, content characteristics, historical search performance, historical traffic, engagement-derived signals, data-availability indicators, missingness indicators, and temporal attributes.</p>
+      <ul>
+        <li>Search demand, keyword length, competition, CPC, and intent.</li>
+        <li>Content type, word count, character count, and category information.</li>
+        <li>Historical impressions, clicks, and average search position.</li>
+        <li>Organic sessions, GA4 sessions, pageviews, and other traffic channels.</li>
+        <li>Historical CTR, organic-session share, AI-session share, direct-session share, and pageviews per session.</li>
+        <li>GSC/GA4 availability and selected missingness indicators.</li>
+        <li>Content age and keyword age, plus calendar-derived components during preprocessing.</li>
+      </ul>
+      <div class="callout warning"><strong>Important distinction:</strong> The approximately 79 million rows describe the scale of the source warehouse. The supervised-learning population is <strong>323,926 observations</strong> after controlled extraction. The paper does not claim that all 79 million daily rows were independently treated as model rows.</div>
     </section>
 
     <section id="methodology">
       <h2>3. Methodology</h2>
-      <h3>Assumptions</h3>
-      <p>The analysis assumes that observable page-level SEO and performance signals contain useful information for distinguishing pages labeled as declining from other pages. The objective is prioritization, not automatic decision-making, and the model does not establish that any individual feature causes decline.</p>
-
-      <h3>Label definition</h3>
-      <p>The supervised target, <code>is_declining_label</code>, was constructed from <code>trend_direction</code>: <code>down</code> was mapped to 1 and all other values to 0. Because <code>trend_direction</code> directly defines the target, it was excluded from the predictor set.</p>
-
-      <h3>Features and preprocessing</h3>
-      <p>The 27 predictors covered search demand and competition, CPC, content size and characteristics, impressions, clicks, sessions, AI sessions, days with impressions and sessions, content age and freshness, CTR, average search position, engagement rate, scroll rate, AI traffic percentage, and categorical tiers for competition, content type, intent, age, freshness, content size, impressions, and position.</p>
-      <p>Highly skewed traffic variables — impressions, clicks, sessions, and AI sessions — were transformed using <code>log1p</code>. Numerical missing values were median-imputed and standardized; categorical missing values were replaced with the most frequent category and categorical variables were one-hot encoded. Preprocessing was kept inside the modeling pipeline.</p>
-
-      <h3>Baseline</h3>
-      <p>A transparent hand-written rule was established before supervised modeling. It provided a practical benchmark representing a simple signal-based prioritization approach. The baseline and learned model were compared using the same evaluation framework.</p>
-
-      <h3>Validation design</h3>
-      <p>The modeling workflow used a client-grouped train/test split. <strong>25 clients were used for training and 7 previously unseen clients were held out for testing</strong>. <code>GroupShuffleSplit</code> used <code>test_size=0.20</code> and <code>random_state=42</code>, with <code>client_id</code> as the grouping variable. Training and test client sets were checked for overlap.</p>
-
-      <h3>Model and evaluation</h3>
-      <p>The primary supervised model was logistic regression. Its predicted probability for the declining class was used as the ranking score. Pages were ordered from highest to lowest score rather than relying only on the default 0.5 classification threshold.</p>
-      <p>Evaluation included accuracy, precision, recall, and Precision@50. Precision@50 is the operationally relevant metric here because it measures the proportion of labeled declining pages among the 50 pages receiving the highest review priority.</p>
-
-      <h3>Leakage checks</h3>
-      <p><code>trend_direction</code>, <code>trend_pct</code>, and <code>is_declining_label</code> were excluded because they contain or directly define outcome information. <code>content_id</code> was excluded as an identifier rather than a predictive signal, and <code>client_id</code> was reserved for grouped validation.</p>
-      <p>The earlier warehouse-stage leakage exercise deliberately introduced a label-derived variable, observed the resulting misleading score improvement, and removed it from the honest workflow. This was used as a practical check that outcome information was not being allowed into the final predictors.</p>
+      <h3>3.1 Research assumptions</h3>
+      <p>The analysis assumes that historical content, search, SEO, traffic, and engagement signals contain information useful for estimating future organic performance. The goal is ranking and decision support, not automated content intervention.</p>
+      <h3>3.2 Target construction</h3>
+      <p>The final supervised-learning target was <code>future_organic_sessions</code>. Historical information available before the target period was used for feature construction, while organic sessions observed during the subsequent target window were retained as the outcome.</p>
+      <div class="code-like">Prediction task: historical content + SEO + search performance + traffic signals → future organic sessions</div>
+      <p>This target definition is materially different from the earlier 30,000-row development workflow, where a decline label was constructed from a supplied trend field. The final warehouse study does <strong>not</strong> use that decline label as its supervised target.</p>
+      <h3>3.3 Feature construction and preprocessing</h3>
+      <p>The final modeling feature set contained <strong>51 features before preprocessing</strong>. These were transformed into <strong>69 model-input columns</strong> for the train, validation, and test matrices.</p>
+      <p>Numerical and categorical variables were processed consistently across splits. Highly skewed traffic variables were represented using logarithmic transformations where appropriate. Missing numerical information was handled inside the preprocessing pipeline, and selected missingness indicators were retained.</p>
+      <h3>3.4 Client-aware evaluation</h3>
+      <p>Client-level separation was treated as a key integrity requirement. The final modeling population was divided into <strong>245,323 training observations</strong>, <strong>59,860 validation observations</strong>, and <strong>18,743 held-out test observations</strong>. Client identifiers were used for grouping, split assignment, and diagnostics rather than as ordinary predictive variables.</p>
+      <p>The held-out test population was kept separate for final evaluation. The workflow also checked client assignment and preserved the separation between model features and future outcome information.</p>
+      <h3>3.5 Baseline</h3>
+      <p>A transparent rule-based baseline was constructed as a non-machine-learning reference. It assigns a score to pages using available historical performance and SEO signals and produces a ranked list. The baseline is not intended to be theoretically optimal; its role is to answer a practical question: <em>does the learned model improve ranking quality over a manually specified prioritization rule?</em></p>
+      <h3>3.6 Final model</h3>
+      <p>The final supervised model was a <strong>Random Forest Regressor</strong>. It estimated future organic sessions from the engineered historical feature representation. The continuous predictions were used as ranking scores, with higher predicted future organic sessions producing higher ranking priority.</p>
+      <p>The model was not treated as a binary classifier. This matters because the final objective is ordering pages, and ranking quality is more directly relevant than forcing a continuous future-session estimate into a yes/no decline decision.</p>
+      <h3>3.7 Leakage prevention</h3>
+      <p>Future organic sessions were kept outside the predictor matrix. Target fields and other future-outcome information were not used to construct the historical feature representation.</p>
+      <p><code>content_hash_id</code> and <code>client_hash_id</code> were retained as keys for identification and client-level evaluation but were excluded from the predictive feature representation. Historical performance variables were used only in historical form.</p>
+      <h3>3.8 Evaluation design</h3>
+      <p>Because the operational use case is ranking, the principal metric was <strong>Normalized Discounted Cumulative Gain (NDCG)</strong>. NDCG rewards placing observations with higher realized relevance near the top of a ranked list.</p>
+      <p>The final test audit evaluated <strong>NDCG@20, NDCG@50, NDCG@100, NDCG@500, and NDCG@1000</strong>. Regression diagnostics including MAE and RMSE were also retained to describe point-prediction error.</p>
     </section>
 
     <section id="results">
-      <h2>4. Results (vs baseline)</h2>
-      <p>The key question is whether the learned model can concentrate labeled declining pages near the top of the queue more effectively than the hand-written baseline.</p>
-
+      <h2>4. Results</h2>
+      <p>The final comparison asks whether the learned Random Forest ranking places observations with higher realized future organic sessions nearer the top of the review ordering than the transparent baseline.</p>
       <figure class="chart-card">
-        <div class="chart-title">Top-50 ranking precision</div>
-        <div class="chart-subtitle">Same evaluation setup; percentage of top-50 pages labeled as declining.</div>
-        <div class="bar-row">
-          <div class="bar-label">Rule-based baseline</div>
-          <div class="track"><div class="bar baseline" style="width:30%"></div></div>
-          <div class="bar-value">30%</div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-label">Logistic regression</div>
-          <div class="track"><div class="bar" style="width:74%"></div></div>
-          <div class="bar-value">74%</div>
-        </div>
-        <figcaption><strong>Takeaway:</strong> The model's top 50 contained 37 labeled declining pages, compared with 15 under the baseline — an improvement of 44 percentage points in Precision@50.</figcaption>
+        <div class="chart-title">Random Forest vs baseline ranking quality</div>
+        <div class="chart-subtitle">NDCG at multiple ranking depths on the final held-out test set of 18,743 observations.</div>
+        <div class="bar-row"><div class="bar-label">@20</div><div class="track"><div class="bar" style="width:92.4791%"></div></div><div class="bar-value">0.9248</div><div class="delta">+0.1135</div></div>
+        <div class="bar-row"><div class="bar-label">@50</div><div class="track"><div class="bar" style="width:93.6565%"></div></div><div class="bar-value">0.9366</div><div class="delta">+0.1267</div></div>
+        <div class="bar-row"><div class="bar-label">@100</div><div class="track"><div class="bar" style="width:93.6938%"></div></div><div class="bar-value">0.9369</div><div class="delta">+0.1614</div></div>
+        <div class="bar-row"><div class="bar-label">@500</div><div class="track"><div class="bar" style="width:86.3333%"></div></div><div class="bar-value">0.8633</div><div class="delta">+0.1389</div></div>
+        <div class="bar-row"><div class="bar-label">@1000</div><div class="track"><div class="bar" style="width:81.9714%"></div></div><div class="bar-value">0.8197</div><div class="delta">+0.1226</div></div>
+        <figcaption><strong>Takeaway:</strong> The Random Forest achieved higher NDCG than the baseline at every evaluated ranking depth. The largest observed absolute improvement was at NDCG@100: +0.1614.</figcaption>
       </figure>
 
-      <h3>Main comparison</h3>
+      <h3>4.1 Final test ranking comparison</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Approach</th><th>Precision@50</th><th>Actual declining pages in top 50</th></tr></thead>
+          <thead><tr><th>Ranking depth</th><th>Random Forest NDCG</th><th>Baseline NDCG</th><th>RF − baseline</th></tr></thead>
           <tbody>
-            <tr><td>Rule-based baseline</td><td>30%</td><td>15 / 50</td></tr>
-            <tr><td><strong>Logistic regression</strong></td><td><strong>74%</strong></td><td><strong>37 / 50</strong></td></tr>
+            <tr><td>NDCG@20</td><td><strong>0.9248</strong></td><td>0.8113</td><td><strong>+0.1135</strong></td></tr>
+            <tr><td>NDCG@50</td><td><strong>0.9366</strong></td><td>0.8099</td><td><strong>+0.1267</strong></td></tr>
+            <tr><td>NDCG@100</td><td><strong>0.9369</strong></td><td>0.7756</td><td><strong>+0.1614</strong></td></tr>
+            <tr><td>NDCG@500</td><td><strong>0.8633</strong></td><td>0.7244</td><td><strong>+0.1389</strong></td></tr>
+            <tr><td>NDCG@1000</td><td><strong>0.8197</strong></td><td>0.6971</td><td><strong>+0.1226</strong></td></tr>
           </tbody>
         </table>
       </div>
-
-      <h3>Logistic-regression metrics</h3>
+      <h3>4.2 Regression diagnostics</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Metric</th><th>Result</th></tr></thead>
+          <thead><tr><th>Metric</th><th>Final test result</th></tr></thead>
           <tbody>
-            <tr><td>Accuracy</td><td>0.5846</td></tr>
-            <tr><td>Precision</td><td>0.5824</td></tr>
-            <tr><td>Recall</td><td>0.6608</td></tr>
-            <tr><td><strong>Precision@50</strong></td><td><strong>0.7400</strong></td></tr>
+            <tr><td>MAE</td><td>1.2682</td></tr>
+            <tr><td>RMSE</td><td>10.8692</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="metric-note">Precision@50 is emphasized because the operational use case is ranking a limited review queue.</p>
+      <p class="metric-note">NDCG is the primary operational metric in this paper because the system is intended to rank pages. MAE and RMSE describe point-prediction error and are therefore secondary to the ranking objective.</p>
+      <div class="callout success"><strong>Interpretation:</strong> On the held-out test population, the learned ranking consistently outperformed the transparent baseline across all five evaluated depths. The result is evidence of stronger observed ranking quality under this evaluation design, not evidence of guaranteed production performance.</div>
 
-      <div class="callout success"><strong>Interpretation:</strong> Under this held-out client evaluation, the learned model increased Precision@50 from 30% to 74%. This is approximately 2.47 times the baseline Precision@50, but it should not be described as a 2.47× increase in general model accuracy.</div>
+      <h3>4.3 Feature-importance signal</h3>
+      <p>The recorded Random Forest feature-importance output placed historical organic sessions, historical GA4 pageviews, and historical GA4 sessions among the highest-ranked features in the final model artifact.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th>Importance</th><th>Rank</th></tr></thead>
+          <tbody>
+            <tr><td><code>numeric__organic_sessions_hist</code></td><td>0.159655</td><td>1</td></tr>
+            <tr><td><code>numeric__ga4_pageviews_hist</code></td><td>0.111878</td><td>2</td></tr>
+            <tr><td><code>numeric__ga4_sessions_hist</code></td><td>0.102940</td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="metric-note">Feature importance indicates how the fitted Random Forest used the available predictors. It is not a causal effect estimate and should not be read as proof that increasing or decreasing a feature will produce a corresponding change in future organic sessions.</p>
     </section>
 
     <section id="limitations">
       <h2>5. Limitations &amp; Honest Framing</h2>
-      <p>The results show stronger ranking performance than the tested baseline under the stated evaluation setup. They do not establish production performance, causal relationships, or the correctness of every individual recommended action.</p>
+      <p>The final warehouse study provides stronger evidence than the earlier small development experiment because it uses a substantially larger source-derived modeling population and a held-out test population. Nevertheless, the conclusions remain bounded by the observed data and evaluation design.</p>
       <div class="two-col">
         <div>
-          <h3>Dataset scope</h3>
-          <p>The reported model results come from the 30,000-row anonymized content-refresh dataset, not the full FlyRank warehouse.</p>
-          <h3>Label limitation</h3>
-          <p>The target represents the dataset's definition of a downward trend. A high score does not independently establish that a page is objectively underperforming.</p>
+          <h3>Source scale vs modeling scale</h3>
+          <p>The source daily fact table is approximately 79 million rows, but the final supervised population is 323,926 observations. The paper should not imply that every warehouse row became an independent model observation.</p>
+          <h3>Target limitation</h3>
+          <p>The target is future organic sessions. A ranking score therefore represents predicted future organic performance, not a direct probability that a page is declining or a diagnosis of why a page performs poorly.</p>
           <h3>Causality</h3>
-          <p>Observed associations do not show that changing an individual feature will prevent or reverse decline.</p>
+          <p>Feature importance and predictive association do not show that changing a page attribute will cause future traffic to increase.</p>
         </div>
         <div>
-          <h3>Validation scope</h3>
-          <p>The evaluation uses one client-grouped holdout: 25 training clients and 7 test clients. Precision@50 is an observed result for this setup, not a guarantee.</p>
-          <h3>Operational context</h3>
-          <p>Strategic importance, seasonality, technical issues, planned changes, and other context may not be represented in the features.</p>
-          <h3>Monitoring</h3>
-          <p>Performance should be re-evaluated if ranking quality declines, important feature distributions shift, the declining-page proportion changes materially, or new clients/content types appear outside the training population.</p>
+          <h3>Client heterogeneity</h3>
+          <p>The warehouse is an unbalanced panel. Clients have different amounts and types of historical coverage, and traffic distributions vary substantially across clients.</p>
+          <h3>Zero-heavy outcome</h3>
+          <p>The final population contains many observations with zero future organic sessions. The target distribution was therefore explicitly inspected, and error diagnostics showed that large-volume pages can contribute disproportionately to RMSE.</p>
+          <h3>Generalization</h3>
+          <p>The reported NDCG values are observations from the held-out evaluation population. They should be re-evaluated when new clients, new content types, changed search behavior, or distribution shifts materially alter the data-generating environment.</p>
         </div>
       </div>
-      <div class="callout warning"><strong>Human review remains mandatory.</strong> The model is decision support. A high-risk page should receive attention sooner; it should not automatically be refreshed, rewritten, redirected, or removed.</div>
+      <div class="callout warning"><strong>Human review remains mandatory.</strong> The model ranks pages; it does not automatically decide whether a page should be refreshed, rewritten, redirected, removed, or left unchanged.</div>
     </section>
 
     <section id="recommendations">
       <h2>6. Ranked Recommendations</h2>
-      <p>The model's main operational output is a ranked review queue. The ranking determines where limited review capacity should be spent first; it does not determine the final content action.</p>
+      <p>The practical output is a ranked page list. The model's prediction should be treated as a prioritization signal that helps allocate limited review time.</p>
       <ol class="steps">
-        <li><strong>Review high-risk pages first.</strong> Start with the pages receiving the highest decline-risk scores.</li>
-        <li><strong>Prioritize high-risk pages that are also stale.</strong> Confirm whether the page remains strategically relevant and whether a refresh is appropriate.</li>
-        <li><strong>Investigate low CTR before changing content.</strong> Review search-result presentation, intent alignment, and relevance before selecting an intervention.</li>
-        <li><strong>Investigate search position and engagement signals.</strong> Treat these as review prompts rather than automatic diagnoses.</li>
-        <li><strong>Use lower-ranked pages as secondary work.</strong> Continue down the queue according to capacity and business priorities.</li>
+        <li><strong>Start with the highest-ranked pages.</strong> Review pages near the top of the learned ranking first because the final test results show stronger concentration of higher-realized future organic-session values near the top than the baseline.</li>
+        <li><strong>Inspect historical performance context.</strong> Review historical organic sessions, GA4 pageviews, GA4 sessions, search performance, and content characteristics before deciding what the page actually needs.</li>
+        <li><strong>Use freshness and engagement as diagnostic context.</strong> Staleness, CTR, search position, and engagement signals can help explain a page's situation, but they are review prompts rather than causal diagnoses.</li>
+        <li><strong>Separate prioritization from intervention.</strong> A high-ranked page deserves earlier attention; it does not automatically deserve a content refresh.</li>
+        <li><strong>Monitor ranking quality over time.</strong> Recalculate NDCG and other diagnostics when new data becomes available or when the client/content population changes.</li>
       </ol>
-
       <h3>Recommended operating workflow</h3>
       <div class="callout"><strong>Rank → Review → Diagnose → Decide → Act → Monitor</strong></div>
-      <p>Model ranking and rule-based reason codes serve different purposes. The model prioritizes pages; the reason codes summarize observable conditions that a reviewer can inspect. They are not causal explanations of the logistic-regression prediction.</p>
+      <p>The model determines <strong>review priority</strong>. A human reviewer determines whether the page should be changed and which intervention, if any, is appropriate.</p>
     </section>
 
     <section id="reproducibility">
       <h2>7. Reproducibility</h2>
-      <p>The research artifact is backed by the project repository and the notebooks used during the analysis.</p>
+      <p>The research artifact is backed by the FlyRank project repository and the capstone notebook used to construct and audit the warehouse-derived modeling workflow.</p>
       <ul>
         <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship">Project repository</a></li>
         <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/blob/main/work/notebooks/capstone.ipynb">Capstone notebook</a></li>
         <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/tree/main/work/notebooks">Analysis notebooks</a></li>
-        <li><a href="https://github.com/muhammadfaseehkhattak/FlyRank-ML-Internship/blob/main/work/outputs/week7_ranked_action_queue.csv">Week 7 ranked action queue</a></li>
       </ul>
-      <p>The public repository contains the analysis workflow and derived artifacts. Dataset access may remain subject to the internship dataset's access controls.</p>
+      <p>The final analytical workflow records the warehouse-derived population, feature construction, train/validation/test populations, baseline ranking, Random Forest predictions, NDCG audits, regression diagnostics, client-level diagnostics, and error analyses. Dataset access remains subject to the original warehouse release's access controls.</p>
+      <div class="callout"><strong>Reproducibility principle:</strong> the full warehouse is queried selectively through its Parquet structure; the final paper reports the exact modeling population and evaluation populations rather than treating the raw warehouse row count as the model sample size.</div>
     </section>
 
     <section id="artifacts">
       <h2>8. Artifacts the Paper Embeds</h2>
-      <p>The page embeds the main model-versus-baseline result directly and links to the ranked action queue and notebooks for inspection.</p>
-      <p>The full ranked queue is retained as a repository artifact rather than displaying every row on the public page. This keeps the research page focused on the evidence while preserving the underlying output for reproducibility.</p>
+      <p>The public paper focuses on artifacts that directly support the final warehouse-based findings without exposing private client information.</p>
+      <h3>8.1 Ranking-quality comparison</h3>
+      <p>The embedded chart and table report Random Forest versus baseline NDCG at 20, 50, 100, 500, and 1,000 ranking positions on the final held-out test population.</p>
+      <h3>8.2 Regression diagnostics</h3>
+      <p>The paper reports final-test MAE and RMSE as secondary diagnostics for the future-organic-session prediction task.</p>
+      <h3>8.3 Feature-importance summary</h3>
+      <p>The paper includes the three highest-ranked recorded Random Forest feature importances as a compact view of which historical signals contributed most strongly to the fitted model's predictive structure.</p>
+      <h3>8.4 Ranked outputs and audits</h3>
+      <p>The repository retains derived outputs supporting ranking, error, client-robustness, and test-integrity analysis. Public presentation uses pseudonymized identifiers and aggregate results rather than private client names, URLs, raw queries, or credentials.</p>
+      <p class="metric-note">The earlier 30,000-row development artifacts are part of the project's development history. They are not presented here as the final evidence for the warehouse-based study.</p>
     </section>
 
     <section id="acknowledgments">
       <h2>9. Acknowledgments &amp; Data Credit</h2>
-      <p>This work was completed as part of the FlyRank ML Internship and was built on the<strong>FlyRank ML Internship dataset</strong>.</p>
-      <p>Data source: <a href="https://flyrank.ai" rel="noopener noreferrer">FlyRank</a>.</p>
-      <p>The dataset and internship materials provided the foundation for the data investigation, modeling experiments, evaluation, and ranked recommendation workflow presented in this paper. The public artifact uses pseudonymized and derived information and does not expose private client names, URLs, raw search queries, or credentials.</p>
+      <p>This work was completed as part of the FlyRank ML Internship and uses the pseudonymized <strong>FlyRank internship warehouse</strong> as its underlying research data source.</p>
+      <p>Data source: <a href="https://flyrank.ai" rel="noopener noreferrer">FlyRank</a>. The warehouse release used in the internship is hosted through the FlyRank dataset on Hugging Face and is subject to its data-use and access requirements.</p>
+      <p>The final paper distinguishes the scale of the original warehouse from the controlled modeling population derived from it. The public artifact reports aggregate results, derived ranking diagnostics, and pseudonymized examples only.</p>
     </section>
   </main>
 
   <footer>
     <div class="smallcaps">Research artifact</div>
-    <p>Public-safe presentation of the completed analysis. Results are reported as observed under the stated evaluation setup and are intended for decision support.</p>
+    <p>Public-safe presentation of the final warehouse-derived analysis. Results are reported as observed under the stated evaluation design and are intended for decision support rather than autonomous content decisions.</p>
   </footer>
 </body>
 </html>
